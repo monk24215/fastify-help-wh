@@ -104,10 +104,30 @@ const ask: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         },
         body: JSON.stringify(payload),
       });
-      // const data: any = await res.json();
+const raw = await res.text();
 
-      const responseText = await res.text();
-      console.log(responseText);
+let data;
+try {
+  data = JSON.parse(raw);
+} catch {
+  data = raw;
+}
+
+if (!res.ok) {
+  fastify.log.error({
+    status: res.status,
+    data
+  }, 'anthropic error');
+
+  return reply.code(502).send({
+    error: 'upstream',
+    status: res.status,
+    details: data,
+    resolved: false
+  });
+}
+
+
 
 let data: any;
 try {
