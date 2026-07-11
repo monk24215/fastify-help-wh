@@ -103,7 +103,35 @@ const ask: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         },
         body: JSON.stringify(payload),
       });
-      const data: any = await res.json();
+      // const data: any = await res.json();
+
+      const responseText = await res.text();
+
+let data: any;
+try {
+  data = JSON.parse(responseText);
+} catch {
+  data = { raw: responseText };
+}
+
+if (!res.ok) {
+  fastify.log.error(
+    { 
+      status: res.status,
+      data 
+    },
+    'anthropic error'
+  );
+
+  return reply.code(502).send({
+    error: 'upstream',
+    text: data?.error?.message || "The AI service hit a snag. Try once more.",
+    resolved: false
+  });
+}
+
+
+      
 
       if (!res.ok) {
         fastify.log.error({ status: res.status, data }, 'anthropic error');
