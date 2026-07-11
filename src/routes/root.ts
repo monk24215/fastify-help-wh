@@ -1,14 +1,15 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import { join } from 'path';
+import { createReadStream, existsSync } from 'fs';
 
 const root: FastifyPluginAsync = async (fastify: FastifyInstance) => {
+  // Serve public/index.html at "/". public/ sits at repo root (one level up from src/).
   fastify.get('/', async (request, reply) => {
-
-    const response = {
-      message: 'Welcome to Fastify Hello World API on Railway',
-      timestamp: new Date().toISOString(),
-    };
-
-    return response;
+    const p = join(__dirname, '..', '..', 'public', 'index.html');
+    if (!existsSync(p)) {
+      return reply.code(404).send('index.html not found in public/');
+    }
+    return reply.type('text/html').send(createReadStream(p));
   });
 };
 
