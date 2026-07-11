@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
-console.log(req.body);
+
 // ── Config ────────────────────────────────────────────────────────────────────
 const ANTHROPIC_API_KEY  = process.env.ANTHROPIC_API_KEY  || '';
 const ANTHROPIC_MODEL    = process.env.ANTHROPIC_MODEL    || 'claude-sonnet-4-6';
@@ -59,6 +59,7 @@ const MAX_CONTENT_LEN = 4000;    // per-message char cap — keeps token cost bo
 const ask: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.post<{ Body: AskBody }>('/', async (request, reply) => {
     const ip = clientIp(request);
+    console.log(ANTHROPIC_API_KEY);
 
     if (rateLimited(ip))
       return reply.code(429).send({ error: 'rate_limited', text: "You're going a bit fast — give it a moment.", resolved: false });
@@ -106,6 +107,7 @@ const ask: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       // const data: any = await res.json();
 
       const responseText = await res.text();
+      console.log(responseText);
 
 let data: any;
 try {
