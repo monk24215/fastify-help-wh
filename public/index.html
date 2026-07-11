@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How can AI help you?</title>
+<style>
+  /* ============================================================
+     CONFIG — edit these two values, nothing else required.
+     ============================================================ */
+  /* SUBMIT_ENDPOINT: where lead data POSTs (email + "reach out" pings to you).
+     Default is Web3Forms (zero setup: get a free access key at web3forms.com,
+     paste it into ACCESS_KEY below). Or swap the whole URL for your own
+     Railway endpoint and ignore ACCESS_KEY. */
+
+  :root{
+    --bg:#0e0f13;
+    --ink:#f4f4f2;
+    --muted:#8a8d98;
+    --line:#23252d;
+    --field:#16181f;
+    --accent:#5ad1c8;      /* cool teal — not Google, not the AI-default clay */
+    --accent-2:#c8a24a;     /* warm brass, used once */
+    --danger:#e0674f;
+    --radius:14px;
+    --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;line-height:1.5;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100vh;padding:24px;
+  }
+  .stage{
+    width:100%;max-width:680px;margin:auto 0;
+    display:flex;flex-direction:column;align-items:center;
+  }
+
+  /* wordmark */
+  .mark{
+    font-family:var(--mono);letter-spacing:-.02em;font-weight:600;
+    font-size:clamp(30px,7vw,52px);margin-bottom:6px;text-align:center;
+  }
+  .mark .a{color:var(--accent)}
+  .tagline{color:var(--muted);font-size:15px;margin-bottom:34px;text-align:center;letter-spacing:.01em}
+
+  /* progress dots */
+  .dots{display:flex;gap:8px;margin-bottom:22px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--line);transition:.3s}
+  .dot.on{background:var(--accent)}
+  .dot.done{background:var(--accent);opacity:.4}
+
+  /* search field */
+  .searchwrap{width:100%;position:relative}
+  .prefix{
+    position:absolute;left:20px;top:50%;transform:translateY(-50%);
+    color:var(--muted);font-size:17px;pointer-events:none;white-space:nowrap;
+  }
+  #q{
+    width:100%;background:var(--field);border:1px solid var(--line);
+    color:var(--ink);border-radius:var(--radius);
+    padding:18px 20px 18px 20px;font-size:17px;font-family:var(--sans);
+    outline:none;transition:border-color .2s,box-shadow .2s;
+  }
+  #q.hasprefix{padding-left:210px}
+  #q:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(90,209,200,.12)}
+  #q::placeholder{color:#5a5d68}
+
+  .row{display:flex;gap:10px;margin-top:16px;width:100%;flex-wrap:wrap;justify-content:center}
+  button{
+    font-family:var(--sans);font-size:15px;font-weight:500;cursor:pointer;
+    border-radius:11px;padding:13px 22px;border:1px solid var(--line);
+    background:var(--field);color:var(--ink);transition:.18s;
+  }
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent);color:#06201e;border-color:var(--accent)}
+  button.primary:hover{filter:brightness(1.08);color:#06201e}
+  button.ghost{background:transparent}
+  button.danger:hover{border-color:var(--danger);color:var(--danger)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+
+  /* answer / conversation area */
+  .thread{width:100%;margin-top:8px;display:flex;flex-direction:column;gap:18px}
+  .bubble{
+    background:var(--field);border:1px solid var(--line);
+    border-radius:var(--radius);padding:20px 22px;font-size:16px;line-height:1.62;
+    white-space:pre-wrap;
+  }
+  .bubble.you{background:transparent;border-color:transparent;padding:0 4px;color:var(--muted);font-size:14px}
+  .bubble.you b{color:var(--ink);font-weight:600}
+  .bubble .cursor{display:inline-block;width:8px;height:17px;background:var(--accent);
+    margin-left:2px;vertical-align:-2px;animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .label{font-family:var(--mono);font-size:12px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:16px;text-align:center}
+
+  .field{
+    width:100%;background:var(--field);border:1px solid var(--line);color:var(--ink);
+    border-radius:var(--radius);padding:15px 18px;font-size:16px;font-family:var(--sans);
+    outline:none;margin-bottom:12px;
+  }
+  .field:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(90,209,200,.12)}
+
+  .center{text-align:center;width:100%}
+  .fade{animation:fade .45s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .hide{display:none!important}
+  .note{color:var(--muted);font-size:13px;margin-top:18px;text-align:center;line-height:1.5}
+  #reassure{font-size:12px;margin-top:14px;opacity:.85}
+  a{color:var(--accent)}
+  .foot{margin-top:40px;color:#4a4d57;font-size:12px;font-family:var(--mono);letter-spacing:.03em}
+  .sessionbar{
+    margin-top:34px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    justify-content:center;padding:12px 16px;border:1px solid var(--line);
+    border-radius:11px;background:var(--field);
+  }
+  .sessionbar .tl{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.03em}
+  .sessionbar .tl b{color:var(--accent);font-weight:600}
+  .sessionbar button{padding:8px 14px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <div class="mark">new to <span class="a">AI</span>?</div>
+  <div class="tagline" id="tagline">Tell me what you're trying to do. I'll point you to the right tool — then get out of your way.</div>
+
+  <div class="dots" id="dots">
+    <div class="dot on"></div><div class="dot"></div><div class="dot"></div>
+  </div>
+
+  <!-- ASK SCREEN -->
+  <div id="askScreen" class="fade" style="width:100%">
+    <div class="searchwrap">
+      <span class="prefix" id="prefix">I'd like some help with</span>
+      <input id="q" class="hasprefix" autocomplete="off"
+             placeholder="…writing emails? …making a picture? …learning something? …just trying it out?"/>
+    </div>
+    <div class="row">
+      <button class="primary" id="askBtn">Show me where to start</button>
+    </div>
+    <div class="note" id="reassure">Free to use. No account needed. Leave anytime with what you came for.</div>
+  </div>
+
+  <!-- THREAD -->
+  <div class="thread" id="thread"></div>
+
+  <!-- POST-ANSWER ACTIONS (injected) -->
+  <div id="actions"></div>
+
+  <div id="sessionBar" class="sessionbar hide"></div>
+
+  <div class="foot">A free helper from wiredhowse · This is an AI giving you a starting point — double-check anything important, and the choice is always yours.</div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+/* Same-origin: the endpoint serves this page, so /ask and /lead are relative.
+   If you ever host the page on a DIFFERENT domain than the API, set
+   API_BASE to the full endpoint origin, e.g. "https://api-howcanihelp.wiredhowse.app" */
+const API_BASE     = "";
+const SUBMIT_URL   = API_BASE + "/lead";
+const ASK_URL      = API_BASE + "/ask";
+const MAX_Q        = 3;
+const STORE_KEY    = "aihelp.session.v2";
+const TTL_MS       = 23 * 60 * 60 * 1000;   // 23-hour session window
+
+/* ============================================================
+   STATE
+   ============================================================ */
+/* threads[] = one per question slot.
+   { messages:[{role,content}], resolved:bool, opener:string } */
+const state = {
+  threads: [],
+  active: -1,              // index of the thread currently being worked
+  email: null,
+  phone: null,
+  contactPref: null,
+  wantsFollowup: false,
+  savedAt: null,
+};
+function resolvedCount(){ return state.threads.filter(t=>t.resolved).length; }
+
+/* ============================================================
+   SESSION PERSISTENCE (localStorage, 23h TTL)
+   User data, not page content — does not affect SEO/indexing.
+   ============================================================ */
+function saveSession(){
+  try{
+    state.savedAt = state.savedAt || Date.now();
+    localStorage.setItem(STORE_KEY, JSON.stringify({
+      threads: state.threads,
+      active: state.active,
+      email: state.email,
+      phone: state.phone,
+      contactPref: state.contactPref,
+      wantsFollowup: state.wantsFollowup,
+      savedAt: state.savedAt,
+    }));
+  }catch(e){ /* private mode / quota — degrade silently */ }
+}
+
+function loadSession(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    if(!s || !s.savedAt) return null;
+    if(Date.now() - s.savedAt > TTL_MS){ clearSession(); return "expired"; }
+    return s;
+  }catch(e){ return null; }
+}
+
+function clearSession(){
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+}
+
+function timeLeftLabel(){
+  const ms = TTL_MS - (Date.now() - (state.savedAt || Date.now()));
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  if(ms <= 0) return "expired";
+  if(h >= 1) return `${h}h ${m}m left`;
+  return `${m}m left`;
+}
+
+const el = {
+  tagline: document.getElementById('tagline'),
+  dots: document.getElementById('dots'),
+  askScreen: document.getElementById('askScreen'),
+  q: document.getElementById('q'),
+  askBtn: document.getElementById('askBtn'),
+  thread: document.getElementById('thread'),
+  actions: document.getElementById('actions'),
+  prefix: document.getElementById('prefix'),
+};
+
+/* prefix width so the input text starts after the grey prompt */
+function sizePrefix(){
+  const w = el.prefix.getBoundingClientRect().width;
+  el.q.style.paddingLeft = (w + 30) + "px";
+}
+window.addEventListener('load', sizePrefix);
+window.addEventListener('resize', sizePrefix);
+
+function updateDots(){
+  const done = resolvedCount();
+  const working = state.active >= 0 && !(state.threads[state.active]||{}).resolved;
+  [...el.dots.children].forEach((d,i)=>{
+    d.className = 'dot';
+    if(i < done) d.classList.add('done');
+    else if(i === done && (working || done < MAX_Q)) d.classList.add('on');
+  });
+}
+
+/* ============================================================
+   CLAUDE CALL — via your /ask proxy (key stays server-side)
+   ============================================================ */
+async function askClaude(messages){
+  const res = await fetch(ASK_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ messages })
+  });
+  const data = await res.json();
+  if(!res.ok || typeof data.text !== "string") throw new Error("ask failed");
+  return { text:data.text.trim(), resolved:!!data.resolved };
+}
+
+/* ============================================================
+   FLOW — each slot is a full back-and-forth thread
+   ============================================================ */
+function addYou(text){
+  const b = mk('div','bubble you fade');
+  b.innerHTML = `You · <b>${escapeHtml(text)}</b>`;
+  el.thread.appendChild(b);
+}
+function addAI(){
+  const b = mk('div','bubble fade');
+  b.innerHTML = '<span class="cursor"></span>';
+  el.thread.appendChild(b);
+  b.scrollIntoView({behavior:'smooth',block:'center'});
+  return b;
+}
+
+/* build the API message array for the active thread */
+function activeMessages(){
+  return state.threads[state.active].messages.map(m=>({role:m.role, content:m.content}));
+}
+
+async function runTurn(){
+  const bubble = addAI();
+  let out;
+  try{
+    out = await askClaude(activeMessages());
+  }catch(e){
+    out = { text:"Something got in the way of reaching the model. Try that once more — if it keeps up, the AI service may need a moment.", resolved:false };
+  }
+  await typeInto(bubble, out.text);
+
+  const t = state.threads[state.active];
+  t.messages.push({role:"assistant", content:out.text});
+  if(out.resolved) t.resolved = true;
+  saveSession();
+  updateDots();
+  updateSessionBar();
+
+  if(t.resolved){
+    hideReply();
+    onThreadResolved();
+  } else {
+    showReply();   // AI asked a clarifier — let them answer inline
+  }
+}
+
+/* first question of a slot, from the search box */
+async function handleAsk(){
+  const tail = el.q.value.trim();
+  if(!tail){ el.q.focus(); return; }
+  const full = "I'd like some help with " + tail;
+
+  el.askScreen.classList.add('hide');
+  el.actions.innerHTML='';
+  state.threads.push({ opener:full, resolved:false, messages:[{role:"user", content:full}] });
+  state.active = state.threads.length - 1;
+  addYou(full);
+  saveSession();
+  await runTurn();
+}
+
+/* a reply within an ongoing thread (answering the AI's clarifier) */
+async function handleReply(text){
+  const v = text.trim();
+  if(!v) return;
+  hideReply();
+  state.threads[state.active].messages.push({role:"user", content:v});
+  addYou(v);
+  saveSession();
+  await runTurn();
+}
+
+/* ---- inline reply input (shown only mid-thread) ---- */
+function showReply(){
+  el.actions.innerHTML='';
+  const wrap = mk('div','fade'); wrap.style.width='100%';
+  const input = mk('input','field'); input.placeholder='Answer that…'; input.autocomplete='off';
+  input.style.marginBottom='10px';
+  const row = mk('div','row');
+  const send = mk('button','primary'); send.textContent='Reply';
+  send.onclick = ()=>{ const val=input.value; input.value=''; handleReply(val); };
+  const done = mk('button','ghost'); done.textContent='This answered it';
+  done.onclick = ()=>{ state.threads[state.active].resolved=true; saveSession(); hideReply(); updateDots(); onThreadResolved(); };
+  input.addEventListener('keydown',e=>{ if(e.key==='Enter') send.onclick(); });
+  row.append(send, done);
+  wrap.append(input, row);
+  el.actions.append(wrap);
+  input.focus();
+}
+function hideReply(){ el.actions.innerHTML=''; }
+
+/* thread resolved → either offer next slot or go to decision */
+function onThreadResolved(){
+  const done = resolvedCount();
+  state.active = -1;
+  saveSession();
+  if(done < MAX_Q){
+    el.actions.innerHTML='';
+    const wrap = mk('div','center fade');
+    const row = mk('div','row');
+    const next = mk('button','primary'); next.textContent = `Ask another (${MAX_Q - done} left)`;
+    next.onclick = ()=>{
+      el.actions.innerHTML='';
+      el.q.value='';
+      el.askScreen.classList.remove('hide');
+      el.q.focus();
+      el.askScreen.scrollIntoView({behavior:'smooth',block:'center'});
+    };
+    const stop = mk('button','ghost'); stop.textContent = "I'm good — what next?";
+    stop.onclick = showDecision;
+    row.append(next, stop);
+    wrap.append(row);
+    el.actions.append(wrap);
+  } else {
+    el.tagline.textContent = "That's three. Now — what do you want to do with these?";
+    showDecision();
+  }
+}
+
+/* keep-a-copy or just go */
+function showDecision(){
+  el.tagline.textContent = "";
+  el.actions.innerHTML='';
+  const wrap = mk('div','center fade');
+  wrap.innerHTML = `<div class="label">Want a copy to keep?</div>
+    <div class="note" style="margin-top:-6px;margin-bottom:20px">
+      I can email you what we figured out, so you have the tools and steps handy. Totally optional — you can just head off and try it.</div>`;
+  const row = mk('div','row');
+  const email = mk('button','primary'); email.textContent = "Email me a copy";
+  email.onclick = collectEmail;
+  const oblivion = mk('button','ghost'); oblivion.textContent = "No thanks, I'm set";
+  oblivion.onclick = oblivionEnd;
+  row.append(email, oblivion);
+  wrap.append(row);
+  el.actions.append(wrap);
+}
+
+function oblivionEnd(){
+  clearSession();
+  updateSessionBar();
+  el.actions.innerHTML='';
+  const wrap = mk('div','center fade');
+  wrap.innerHTML = `<div class="bubble" style="text-align:center">
+    You're all set. Go give it a try — you've got this.<br>
+    <span style="color:var(--muted)">Nothing was kept or sent. Come back anytime you want another pointer.</span></div>`;
+  const row = mk('div','row'); row.style.marginTop='16px';
+  const more = mk('button','ghost'); more.textContent = "Actually, I could use a hand from a person";
+  more.onclick = ()=>{ state.email ? contactPrefStep() : collectEmail(true); };
+  row.append(more);
+  wrap.append(row);
+  el.actions.append(wrap);
+}
+
+function collectEmail(fromOblivion){
+  el.actions.innerHTML='';
+  const wrap = mk('div','center fade');
+  wrap.innerHTML = `<div class="label">Where should it go?</div>`;
+  const input = mk('input','field'); input.type='email'; input.placeholder='you@example.com';
+  input.autocomplete='email';
+  const err = mk('div','note'); err.style.color='var(--danger)'; err.style.display='none';
+  const send = mk('button','primary'); send.textContent = fromOblivion ? "Send & continue" : "Send it";
+  send.onclick = async ()=>{
+    const v = input.value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ err.textContent="That email doesn't look right."; err.style.display='block'; return; }
+    state.email = v; saveSession();
+    send.disabled = true; send.textContent = "Sending…";
+    await submitLead({type:"email_transcript"});
+    thankThenContact(fromOblivion);
+  };
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')send.click()});
+  const row = mk('div','row'); row.append(send);
+  wrap.append(input, err, row);
+  el.actions.append(wrap);
+  input.focus();
+}
+
+function thankThenContact(){
+  el.actions.innerHTML='';
+  const wrap = mk('div','center fade');
+  wrap.innerHTML = `<div class="bubble" style="text-align:center">
+    On its way to <b>${escapeHtml(state.email)}</b>. Check your inbox in a minute.</div>`;
+  const row = mk('div','row'); row.style.marginTop='16px';
+  const more = mk('button','primary'); more.textContent = "I have more questions";
+  more.onclick = contactPrefStep;
+  const fin = mk('button','ghost'); fin.textContent = "That's all — thanks";
+  fin.onclick = finalEnd;
+  row.append(more, fin);
+  wrap.append(row);
+  el.actions.append(wrap);
+}
+
+function contactPrefStep(){
+  el.actions.innerHTML='';
+  const wrap = mk('div','center fade');
+  wrap.innerHTML = `<div class="label">Good — let's talk for real</div>
+    <div class="note" style="margin-top:-6px;margin-bottom:18px">
+      How do you want me to reach out?</div>`;
+  const opts = [["Email","email"],["Phone call","phone"],["Text","text"]];
+  const row = mk('div','row');
+  opts.forEach(([lbl,val])=>{
+    const b = mk('button','ghost'); b.textContent = lbl;
+    b.onclick = ()=>{ state.contactPref = val; saveSession(); askContactDetail(val); };
+    row.append(b);
+  });
+  wrap.append(row);
+  el.actions.append(wrap);
+}
+
+function askContactDetail(pref){
+  el.actions.innerHTML='';
+  const wrap = mk('div','center fade');
+  const needsPhone = (pref==='phone'||pref==='text');
+  const needsEmail = (pref==='email' && !state.email);
+
+  if(needsPhone){
+    wrap.innerHTML = `<div class="label">Your number</div>`;
+    const input = mk('input','field'); input.type='tel'; input.placeholder='(512) 555-0123';
+    const btn = mk('button','primary'); btn.textContent="Reach out to me";
+    btn.onclick = async ()=>{
+      const v = input.value.trim();
+      if(v.replace(/\D/g,'').length < 7){ input.focus(); return; }
+      state.phone = v; state.wantsFollowup = true; saveSession();
+      btn.disabled=true; btn.textContent="Sending…";
+      await submitLead({type:"followup_request"});
+      finalReach();
+    };
+    input.addEventListener('keydown',e=>{if(e.key==='Enter')btn.click()});
+    wrap.append(input, mk('div','row')).lastChild.append(btn);
+  } else if(needsEmail){
+    wrap.innerHTML = `<div class="label">Your email</div>`;
+    const input = mk('input','field'); input.type='email'; input.placeholder='you@example.com';
+    const btn = mk('button','primary'); btn.textContent="Reach out to me";
+    btn.onclick = async ()=>{
+      const v = input.value.trim();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ input.focus(); return; }
+      state.email=v; state.wantsFollowup=true; saveSession();
+      btn.disabled=true; btn.textContent="Sending…";
+      await submitLead({type:"followup_request"});
+      finalReach();
+    };
+    input.addEventListener('keydown',e=>{if(e.key==='Enter')btn.click()});
+    wrap.append(input, mk('div','row')).lastChild.append(btn);
+  } else {
+    // email pref & we already have it
+    state.wantsFollowup = true;
+    submitLead({type:"followup_request"}).then(finalReach);
+    wrap.innerHTML = `<div class="bubble" style="text-align:center">Sending…</div>`;
+  }
+  el.actions.append(wrap);
+}
+
+function finalReach(){
+  el.actions.innerHTML='';
+  const wrap = mk('div','center fade');
+  wrap.innerHTML = `<div class="bubble" style="text-align:center">
+    Got it. I'll reach out by <b>${state.contactPref}</b> personally — not a bot this time.<br>
+    <span style="color:var(--muted)">Talk soon.</span></div>`;
+  el.actions.append(wrap);
+}
+
+function finalEnd(){
+  el.actions.innerHTML='';
+  const wrap = mk('div','center fade');
+  wrap.innerHTML = `<div class="bubble" style="text-align:center">
+    Anytime. Come back and ask three more whenever you want.</div>`;
+  el.actions.append(wrap);
+}
+
+/* ============================================================
+   SUBMIT
+   ============================================================ */
+async function submitLead(meta){
+  // flatten each thread into a q/a pair the endpoint already understands.
+  // q = the opening question; a = the full back-and-forth transcript.
+  const transcript = state.threads.map(t=>{
+    const a = t.messages.map(m=>
+      (m.role==="user" ? "You: " : "AI: ") + m.content
+    ).join("\n\n");
+    return { q: t.opener, a };
+  });
+
+  const payload = {
+    event: meta.type,
+    email: state.email || null,
+    phone: state.phone || null,
+    contact_preference: state.contactPref || null,
+    wants_followup: state.wantsFollowup,
+    questions_asked: state.threads.length,
+    transcript,
+  };
+
+  try{
+    await fetch(SUBMIT_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json", "Accept":"application/json"},
+      body:JSON.stringify(payload)
+    });
+  }catch(e){ console.error("submit failed", e); }
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function mk(tag,cls){ const e=document.createElement(tag); if(cls)e.className=cls; return e; }
+function escapeHtml(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function typeInto(node, text){
+  return new Promise(resolve=>{
+    node.textContent='';
+    const cursor = mk('span','cursor'); node.appendChild(cursor);
+    let i=0;
+    const step = ()=>{
+      const chunk = text.slice(i, i+3); i+=3;
+      cursor.insertAdjacentText('beforebegin', chunk);
+      if(i < text.length){ setTimeout(step, 8); }
+      else { cursor.remove(); resolve(); }
+    };
+    step();
+  });
+}
+
+/* ============================================================
+   SESSION BAR — shows only when a session exists on device
+   ============================================================ */
+const sessionBar = document.getElementById('sessionBar');
+
+function updateSessionBar(){
+  const hasData = state.savedAt && state.threads.length > 0;
+  if(!hasData){ sessionBar.classList.add('hide'); return; }
+  sessionBar.classList.remove('hide');
+  sessionBar.innerHTML = '';
+  const tl = mk('span','tl');
+  tl.innerHTML = `Session saved on this device · <b>${timeLeftLabel()}</b>`;
+  const startNew = mk('button','ghost'); startNew.textContent = 'Start new';
+  startNew.onclick = ()=>{ clearSession(); location.reload(); };
+  const clr = mk('button','ghost'); clr.textContent = 'Clear now';
+  clr.onclick = ()=>{ clearSession(); location.reload(); };
+  sessionBar.append(tl, startNew, clr);
+}
+
+/* refresh the countdown label each minute */
+setInterval(()=>{ if(!sessionBar.classList.contains('hide')) updateSessionBar(); }, 60000);
+
+/* ============================================================
+   RESTORE ON LOAD
+   ============================================================ */
+function rehydrate(s){
+  state.threads = s.threads || [];
+  state.active = (typeof s.active === "number") ? s.active : -1;
+  state.email = s.email || null;
+  state.phone = s.phone || null;
+  state.contactPref = s.contactPref || null;
+  state.wantsFollowup = !!s.wantsFollowup;
+  state.savedAt = s.savedAt;
+
+  // rebuild every thread's dialogue
+  el.askScreen.classList.add('hide');
+  state.threads.forEach(t=>{
+    t.messages.forEach(m=>{
+      if(m.role==="user"){ addYou(m.content); }
+      else { const b = mk('div','bubble'); b.textContent = m.content; el.thread.appendChild(b); }
+    });
+  });
+  updateDots();
+  updateSessionBar();
+
+  // if they left mid-thread (last turn was the AI asking a clarifier), resume it inline
+  const at = state.threads[state.active];
+  const midThread = at && !at.resolved &&
+    at.messages.length && at.messages[at.messages.length-1].role === "assistant";
+  if(midThread){
+    el.tagline.textContent = "Welcome back — pick up where you left off.";
+    showReply();
+    return;
+  }
+
+  // otherwise offer next slot / decision
+  state.active = -1;
+  const done = resolvedCount();
+  el.tagline.textContent = "Welcome back — your session's still here.";
+  el.actions.innerHTML = '';
+  const wrap = mk('div','center fade');
+  const row = mk('div','row');
+  if(done < MAX_Q){
+    const cont = mk('button','primary'); cont.textContent = `Ask another (${MAX_Q - done} left)`;
+    cont.onclick = ()=>{
+      el.actions.innerHTML='';
+      el.q.value='';
+      el.askScreen.classList.remove('hide');
+      el.q.focus();
+    };
+    row.append(cont);
+  }
+  const decide = mk('button','ghost'); decide.textContent = 'What can I do with these?';
+  decide.onclick = showDecision;
+  const fresh = mk('button','ghost'); fresh.textContent = 'Start over';
+  fresh.onclick = ()=>{ clearSession(); location.reload(); };
+  row.append(decide, fresh);
+  wrap.append(row);
+  el.actions.append(wrap);
+}
+
+function initSession(){
+  const s = loadSession();
+  if(s === "expired"){
+    el.tagline.textContent = "Your last session expired. Fresh start — ask away.";
+    return;
+  }
+  if(s && (s.threads||[]).length){ rehydrate(s); }
+}
+
+el.askBtn.onclick = handleAsk;
+el.q.addEventListener('keydown', e=>{ if(e.key==='Enter') handleAsk(); });
+updateDots();
+initSession();
+</script>
+</body>
+</html>
