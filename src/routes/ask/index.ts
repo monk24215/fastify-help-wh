@@ -114,9 +114,9 @@ try {
 }
 
 if (!res.ok) {
-  fastify.log.error({
-    status: res.status,
-    data
+  fastify.log.error({ 
+    status: res.status, 
+    data 
   }, 'anthropic error');
 
   return reply.code(502).send({
@@ -156,10 +156,6 @@ return reply.code(502).send({
 
       
 
-      if (!res.ok) {
-        fastify.log.error({ status: res.status, data }, 'anthropic error');
-        return reply.code(502).send({ error: 'upstream', text: "The AI service hit a snag. Try once more.", resolved: false });
-      }
 
       const rawText: string = (Array.isArray(data.content) ? data.content : [])
         .filter((b: any) => b?.type === 'text' && typeof b.text === 'string')
