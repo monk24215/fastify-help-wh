@@ -125,11 +125,12 @@ if (!res.ok) {
     'anthropic error'
   );
 
-  return reply.code(502).send({
-    error: 'upstream',
-    text: data?.error?.message || "The AI service hit a snag. Try once more.",
-    resolved: false
-  });
+return reply.code(502).send({
+  error: 'upstream',
+  anthropic_status: res.status,
+  details: data,
+  resolved: false
+});
 }
 
 
