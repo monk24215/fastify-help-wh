@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const ANTHROPIC_API_KEY  = process.env.ANTHROPIC_API_KEY  || '';
-const ANTHROPIC_MODEL    = process.env.ANTHROPIC_MODEL    || 'claude-sonnet-4-6';
+const ANTHROPIC_MODEL    = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514';
 const ENABLE_WEB_SEARCH  = process.env.ENABLE_WEB_SEARCH  === 'false';
 
 const SYSTEM = `You are a warm, grounded guide for someone curious but nervous about AI. \
