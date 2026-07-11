@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
-
+console.log(req.body);
 // ── Config ────────────────────────────────────────────────────────────────────
 const ANTHROPIC_API_KEY  = process.env.ANTHROPIC_API_KEY  || '';
 const ANTHROPIC_MODEL    = process.env.ANTHROPIC_MODEL    || 'claude-sonnet-4-6';
