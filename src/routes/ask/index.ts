@@ -1,5 +1,8 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 
+
+
+
 // ── Config ────────────────────────────────────────────────────────────────────
 const ANTHROPIC_API_KEY  = process.env.ANTHROPIC_API_KEY  || '';
 const ANTHROPIC_MODEL    = process.env.ANTHROPIC_MODEL    || 'claude-sonnet-4-6';
@@ -46,6 +49,7 @@ setInterval(() => {
 interface AskBody { messages?: Array<{ role: string; content: string }>; }
 
 const ask: FastifyPluginAsync = async (fastify: FastifyInstance) => {
+  // fastify.get('/', async (request, reply) => {
   fastify.post<{ Body: AskBody }>('/', async (request, reply) => {
     const ip = (request.headers['x-forwarded-for'] as string || request.socket?.remoteAddress || 'unknown').split(',')[0].trim();
 
@@ -104,4 +108,5 @@ const ask: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   });
 };
 
-export default ask;
+
+export default example;
