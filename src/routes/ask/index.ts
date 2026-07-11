@@ -51,6 +51,11 @@ function clientIp(request: { headers: Record<string, unknown>; socket?: { remote
 }
 
 // ── Route ─────────────────────────────────────────────────────────────────────
+
+fastify.log.info({
+  anthropicKeyLoaded: !!process.env.ANTHROPIC_API_KEY,
+  keyLength: process.env.ANTHROPIC_API_KEY?.length
+});
 interface AskBody { messages?: Array<{ role: string; content: string }>; }
 
 const MAX_MESSAGES    = 40;      // one thread should never legitimately exceed this
