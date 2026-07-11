@@ -1,14 +1,10 @@
 import Fastify from 'fastify';
 import AutoLoad, { AutoloadPluginOptions } from '@fastify/autoload';
-import cors from '@fastify/cors';
 import { join } from 'path';
 
 const fastify = Fastify({ logger: true });
 
-fastify.register(cors, {
-  origin: process.env.ALLOWED_ORIGIN || true,
-  methods: ['GET', 'POST', 'OPTIONS'],
-});
+
 
 const pluginOptions: Partial<AutoloadPluginOptions> = {};
 
